@@ -1,3 +1,5 @@
+import hashlib
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -9,6 +11,7 @@ from sqlalchemy import (
     Table,
 )
 from sqlalchemy.sql import select
+
 from . import utils
 
 
@@ -94,3 +97,31 @@ class Fills(BaseTable):
 
         self.data = [merge_dict(x) for x in fills]
         self.insert_table(self.data, "execId")
+
+
+class Ticks(BaseTable):
+    def __init__(self, engine, tablename):
+        super().__init__(engine, tablename)
+        self.table = Table(
+            self.tablename,
+            self.metadata,
+            Column("id", String(64)),
+            Column("time", DateTime),
+            Column("priceBid", Float),
+            Column("priceAsk", Float),
+            Column("sizeBid", Float),
+            Column("sizeAsk", Float),
+        )
+
+    def insert(self, ticks):
+        def to_dict(obj):
+            attrs = ("time", "priceAsk", "priceBid", "sizeAsk", "sizeBid")
+            prices = "".join([str(getattr(obj, attr)) for attr in attrs[1:]])
+            id_ = f"{obj.time:%y%m%d%H%M%S}{prices}"
+            id_md5 = hashlib.md5(id_.encode("utf8")).hexdigest()
+            ret = {attr: getattr(obj, attr) for attr in attrs}
+            ret["id"] = id_md5
+            return ret
+
+        self.data = [to_dict(t) for t in ticks]
+        self.insert_table(self.data, "time")
