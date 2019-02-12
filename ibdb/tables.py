@@ -77,7 +77,7 @@ class Fills(BaseTable):
             Column("yieldRedemptionDate", Float),
         )
 
-    def insert(self, fills):
+    def insert(self, data):
         def merge_dict(Fill):
             execution = Fill.execution.dict()
             contract = Fill.contract.dict()
@@ -95,7 +95,7 @@ class Fills(BaseTable):
             execution.update(commission_report)
             return execution
 
-        self.data = [merge_dict(x) for x in fills]
+        self.data = [merge_dict(x) for x in data]
         self.insert_table(self.data, "execId")
 
 
@@ -113,7 +113,7 @@ class Ticks(BaseTable):
             Column("sizeAsk", Float),
         )
 
-    def insert(self, ticks):
+    def insert(self, data):
         def to_dict(obj):
             attrs = ("time", "priceAsk", "priceBid", "sizeAsk", "sizeBid")
             prices = "".join([str(getattr(obj, attr)) for attr in attrs[1:]])
@@ -123,5 +123,26 @@ class Ticks(BaseTable):
             ret["id"] = id_md5
             return ret
 
-        self.data = [to_dict(t) for t in ticks]
+        self.data = [to_dict(t) for t in data]
         self.insert_table(self.data, "time")
+
+
+class Bars(BaseTable):
+    def __init__(self, engine, tablename):
+        super().__init__(engine, tablename)
+        self.table = Table(
+            self.tablename,
+            self.metadata,
+            Column("date", DateTime),
+            Column("open", Float),
+            Column("high", Float),
+            Column("low", Float),
+            Column("close", Float),
+            Column("volume", Integer),
+            Column("barCount", Integer),
+            Column("average", Float),
+        )
+
+    def insert(self, data):
+        self.data = [d.dict() for d in data]
+        self.insert_table(self.data, "date")
