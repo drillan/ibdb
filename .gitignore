@@ -104,6 +104,6 @@ venv.bak/
 .mypy_cache/
 
 # work
-*.ipynb
+work/
 *.pickle
 *.sqlite3
